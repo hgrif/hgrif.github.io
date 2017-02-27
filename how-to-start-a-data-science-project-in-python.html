@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="">	
+<head>
+	<meta charset="utf-8"/>
+	<title>How to start a Data Science project in Python - ~/hgrif</title>	
+	<meta name="author" content="Henk">
+	
+
+	<meta name="description" content="A lot of blog posts are written on the complicated Data Science-y stuff but not so many posts talk about the simple stuff. A simple but very important topic is how to start and structure your projects. This post gives a few pointers for setting up your projects. Project structure ...">
+
+
+	<link rel="top" href="#" /><link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,300italic,400italic,600italic|Source+Code+Pro' rel='stylesheet' type='text/css'></link>
+	<link rel="stylesheet" href="/theme/css/main.css" type="text/css" />
+		
+
+</head>
+	
+<body>
+
+    <div class="container">
+	  
+	  <header role="banner">
+	    <div class="feeds">
+	    </div>
+		<a href="" class="title">~/hgrif</a>
+      </header>
+	
+	  <div class="wrapper">
+
+		  <div role="main" class="content">
+	<article class="full">
+			
+		<h1>How to start a Data Science project in Python</h1>
+		
+<div class="metadata">
+  <time datetime="2017-02-26T00:00:00+01:00" pubdate>Sun 26 February 2017</time>
+    <address class="vcard author">
+      by <a class="url fn" href="/author/henk.html">Henk</a>
+    </address>
+  in <a href="/category/blogs.html">Blogs</a>
+</div>		
+		<p>A lot of blog posts are written on the complicated Data Science-y stuff but not so many posts talk about the simple stuff.
+A simple but very important topic is how to start and structure your projects.
+This post gives a few pointers for setting up your projects.</p>
+<h2>Project structure</h2>
+<p>Project structures often organically grow to suit people's needs, leading to different project structures within a team.
+You can consider yourself lucky if at some point in time you, or someone in your team, finds an obscure blog post with a somewhat sane structure and enforces it in your team.</p>
+<p>Many years ago I stumbled upon <a href="http://projecttemplate.net/">ProjectTemplate for R</a>.
+Since then I've tried to get people to use a good project structure.
+More recently <a href="https://www.drivendata.org/">DrivenData</a> released their more generic <a href="https://drivendata.github.io/cookiecutter-data-science/#cookiecutter-data-science">Cookiecutter Data Science</a>.</p>
+<p>The main philosophies of those projects are:</p>
+<ul>
+<li>A consistent and well organized structure allows people to collaborate more easily.</li>
+<li>Your analyses should be reproducible and your structure should enable that.</li>
+<li>A projects starts from raw data that should never be edited; consider raw data immutable and only edit derived sources.</li>
+</ul>
+<p>I couldn't help to invent my own project structure and my minimal structure looks something like this (example <a href="git@github.com:hgrif/example-project.git">here</a>):</p>
+<div class="highlight"><pre><span></span>example_project<span class="o">/</span>
+├── data<span class="o">/</span>               <span class="o">&lt;-</span> The original<span class="p">,</span> immutable data dump.       
+├── figures<span class="o">/</span>            <span class="o">&lt;-</span> Figures saved by notebooks and scripts.
+├── notebooks<span class="o">/</span>          <span class="o">&lt;-</span> Jupyter notebooks.
+├── output<span class="o">/</span>             <span class="o">&lt;-</span> Processed data<span class="p">,</span> models<span class="p">,</span> logs<span class="p">,</span> etc.
+├── exampleproject<span class="o">/</span>     <span class="o">&lt;-</span> Python package with <span class="kn">source</span> code.
+│   └── __init__.py     <span class="o">&lt;--</span> Make the folder a package.
+    └── process.py      <span class="o">&lt;--</span> Example module.
+├── tests<span class="o">/</span>              <span class="o">&lt;-</span> Tests <span class="kr">for</span> your Python package.
+    └── test_process.py <span class="o">&lt;--</span> Tests <span class="kr">for</span> process.py.
+├── environment.yml     <span class="o">&lt;-</span> Virtual environment definition.
+├── README.md           <span class="o">&lt;-</span> README with info of the project.
+└── setup.py            <span class="o">&lt;-</span> Install and distribute your module.
+</pre></div>
+
+
+<p>It mostly follows the other structures: </p>
+<ul>
+<li>raw data is immutable and goes to <code>data/</code>; </li>
+<li>processed data and derived output goes to different folders like <code>figures/</code> and <code>output/</code>; </li>
+<li>notebooks go to <code>notebooks/</code>; </li>
+<li>project info goes in the <code>README.md</code>; </li>
+<li>and the project code goes to a separate folder.</li>
+</ul>
+<p>I try to make a full-fledged Python package (plus tests) out of my project structure so that the step between prototyping and production is as small as possible.
+The <code>setup.py</code> allows me to install the package in a virtual environment and use it in my Notebooks (more on this in a later blog post).</p>
+<p>It doesn't really matter which structure you pick, as long as it fits your workflow and you stick with it for a while.
+Try to understand the philosophies of the projects and pick the structure that suits your needs.</p>
+<h2>Virtual environment</h2>
+<p>Projects should be independent of each other: you don't want your new experiments to mess up your older work.
+We do this partly by putting the files of different projects in different folders but you should also use separate <em>Python</em> environments.</p>
+<p>Virtual environments are isolated environments that separate dependencies of different projects and avoid package conflicts.
+Each virtual environment has its own packages and its own package versions.
+Environment A can have <code>numpy</code> version 1.11 and <code>pandas</code> version 0.18 while environment B only has <code>pandas</code> version 0.17.
+I like <a href="https://conda.io/miniconda.html">conda</a> virtual environments because they're well suited for Data Science (read <a href="https://jakevdp.github.io/blog/2016/08/25/conda-myths-and-misconceptions/">here</a> why).</p>
+<p>Create a new <a href="">conda</a> virtual environment called <code>example-project</code> with Python 3.5:</p>
+<div class="highlight"><pre><span></span>$ conda install --name example-project <span class="nv">python</span><span class="o">=</span>3.5
+</pre></div>
+
+
+<p>Make sure your virtual environment is activated (leave out the <code>source</code> if you're on Window):</p>
+<div class="highlight"><pre><span></span>$ <span class="nb">source</span> activate example-project
+</pre></div>
+
+
+<p>... and you're now ready to install your favourite packages!</p>
+<div class="highlight"><pre><span></span>$ conda install pandas numpy jupyter scikit-learn
+</pre></div>
+
+
+<p>When you're switching to a different project, run a <code>source deactivate</code> and activate the project's virtual environment.</p>
+<p>Once you get the hang of the <code>activate</code>-<code>deactivate</code>-flow, you'll find that a virtual environments is a lightweight tool to keep your Python environments separated.
+By exporting your environment definition file (i.e. all installed packages and their versions) your projects will also be easily reproducible.
+If you want a more detailed discussion, check <a href="http://tdhopper.com/blog/2015/Nov/24/my-python-environment-workflow-with-conda/">Tim Hopper's post</a>.</p>
+<h2>Git</h2>
+<p>Every project should have its own Git repository.
+Having a repo per project allows you to track the history of a project and maintain complex version dependencies between projects.</p>
+<p>Alternatively, you can choose to have one repository with multiple projects, putting all the knowledge in a single place.
+The downside is, however, that it often ends up with ugly merge conflicts: Data Scientists are generally not that fluent with Git.
+In addition to a lot of Git frustrations, it makes your projects less independent of eachother.</p>
+<p>The easiest way to set up Git is by creating a new git repository on your Git host (e.g. <a href="https://help.github.com/articles/creating-a-new-repository/">GitHub</a> or <a href="https://docs.gitlab.com/ee/gitlab-basics/create-project.html">GitLab</a>) and cloning that:</p>
+<div class="highlight"><pre><span></span>$ git clone https://github.com/hgrif/
+</pre></div>
+
+
+<p>You can then setup your project structure in this empty folder.</p>
+<p>If you followed this guide and already created a folder with some files, first initialize a git repository on your machine:</p>
+<div class="highlight"><pre><span></span>$ git init
+</pre></div>
+
+
+<p>Then create a new git repository on your host, get its link and run:</p>
+<div class="highlight"><pre><span></span>$ git remote add origin https://github.com/hgrif/
+</pre></div>
+
+
+<p>This adds the remote repository with the link <code>https://github.com/hgrif/</code> and names it <code>origin</code>.
+You probably have to push your current <code>master</code> branch to <code>origin</code>:</p>
+<div class="highlight"><pre><span></span>$ git push --set-upstream origin master
+</pre></div>
+
+
+<p>Now that Git is set up, you can <code>git add</code> and <code>git commit</code> to your heart's content!</p>
+<h2>Tooling</h2>
+<p>You can get away of some of the repetitive tasks by using some tooling!</p>
+<p>The Python package <a href="https://cookiecutter.readthedocs.io/en/latest/"><code>cookiecutter</code></a> automatically creates project folders based on a template.
+You can use existing template like the <a href="https://github.com/drivendata/cookiecutter-data-science">Cookiecutter Data Science</a> or <a href="https://github.com/hgrif/cookiecutter-ds-python/tree/master/%7B%7B%20cookiecutter.repo_name%20%7D%7D">mine</a>, or invent your own.</p>
+<p>The easiest way to use virtual environments is to use an editor like <a href="https://www.jetbrains.com/pycharm/">PyCharm</a> that supports them.
+You can also use <a href="https://github.com/kennethreitz/autoenv">autoenv</a> or <a href="https://direnv.net/">direnv</a> to activate a virtual environment and set environment variables if you <code>cd</code> into a directory.</p>
+<h2>Conclusion</h2>
+<p>Having a good setup for your Data Science projects makes it easier for other people to work on your projects and makes them more reproducible. 
+A good structure, a virtual environment and a git repository are the building blocks of any project.</p>	
+
+	</article>
+
+    <p>
+	<a href="https://twitter.com/share" class="twitter-share-button" data-via="" data-lang="en" data-size="large" data-related="">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+	</p>
+
+
+		  </div>	
+		  
+		  <div class="sidebar">
+
+	        <nav>
+	          <h2>Categories</h2>
+	          <ul>
+	              <li class="active"><a href="/category/blogs.html">Blogs</a></li>
+	          </ul>
+	        </nav>
+
+
+
+		  </div>
+
+	  </div>
+
+      <footer>
+		<p role="contentinfo">
+		  © 2013 Henk - Proudly powered by <a href="http://alexis.notmyidea.org/pelican/">pelican</a>. Theme <a href="https://github.com/fle/pelican-simplegrey">pelican-simplegrey</a>.
+    	</p>
+
+	  </footer>	
+
+	</div>
+	
+
+</body>
+</html>
