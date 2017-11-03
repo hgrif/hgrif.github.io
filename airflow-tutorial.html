@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="">	
+<head>
+	<meta charset="utf-8"/>
+	<title>Airflow Tutorial - ~/hgrif</title>	
+	<meta name="author" content="Henk">
+	
+
+	<meta name="description" content="This tutorial walks you through the basics of setting up and using Airflow, and it will give you some practical tips.">
+
+
+	<link rel="top" href="#" /><link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,300italic,400italic,600italic|Source+Code+Pro' rel='stylesheet' type='text/css'></link>
+	<link rel="stylesheet" href="/theme/css/main.css" type="text/css" />
+		
+
+</head>
+	
+<body>
+
+    <div class="container">
+	  
+	  <header role="banner">
+	    <div class="feeds">
+	    </div>
+		<a href="" class="title">~/hgrif</a>
+      </header>
+	
+	  <div class="wrapper">
+
+		  <div role="main" class="content">
+	<article class="full">
+			
+		<h1>Airflow Tutorial</h1>
+		
+<div class="metadata">
+  <time datetime="2017-08-11T15:30:00+02:00" pubdate>Fri 11 August 2017</time>
+    <address class="vcard author">
+      by <a class="url fn" href="/author/henk.html">Henk</a>
+    </address>
+  in <a href="/category/blogs.html">Blogs</a>
+</div>		
+		<p><a href="https://airflow.incubator.apache.org/">Airflow</a> is a scheduler for workflows such as data pipelines, similar to <a href="https://github.com/spotify/luigi">Luigi</a> and <a href="https://oozie.apache.org/">Oozie</a>.</p>
+<p>This tutorial is loosely based on the Airflow tutorial in the <a href="https://pythonhosted.org/airflow/tutorial.html">official documentation</a>.
+It will walk you through the basics of setting up Airflow and creating an Airflow workflow, and it will give you some practical tips.
+A (possibly) more up-to-date version of this blog can be found in my <a href="https://github.com/hgrif/airflow-tutorial">git repo</a>.</p>
+<h2>1. Setup</h2>
+<p>Setting up a basic configuration of Airflow is pretty straightforward.
+After installing the Python package, we'll need a database to store some data and start the core Airflow services.</p>
+<p>You can skip this section if Airflow is already set up.
+Make sure that you can run <code>airflow</code> commands, know where to put your DAGs and have access to the web UI.</p>
+<h4>Install Airflow</h4>
+<p>Airflow is installable with <code>pip</code> via a simple <code>pip install apache-airflow</code>.
+Either use a separate Python virtual environment or install it in your default python environment.</p>
+<p>To use the conda virtual environment as defined in <code>environment.yml</code> from my <a href="https://github.com/hgrif/airflow-tutorial">git repo</a>:</p>
+<ul>
+<li>Install <a href="http://conda.pydata.org/miniconda.html">miniconda</a>.</li>
+<li>Make sure that conda is on your path:</li>
+</ul>
+<div class="highlight"><pre><span></span>$ which conda
+~/miniconda3/bin/conda
+</pre></div>
+
+
+<ul>
+<li>Create the virtual environment from <code>environment.yml</code>:</li>
+</ul>
+<div class="highlight"><pre><span></span>$ conda env create -f environment.yml
+</pre></div>
+
+
+<ul>
+<li>Activate the virtual environment:</li>
+</ul>
+<div class="highlight"><pre><span></span>$ <span class="nb">source</span> activate airflow-tutorial
+</pre></div>
+
+
+<p>You should now have an (almost) working Airflow installation.</p>
+<p>Alternatively, install Airflow yourself by running:</p>
+<div class="highlight"><pre><span></span>$ pip install apache-airflow
+</pre></div>
+
+
+<p>Airflow used to be packaged as <code>airflow</code> but is packaged as <code>apache-airflow</code> since version 1.8.1.
+Make sure that you install any extra packages with the right Python package: e.g. use <code>pip install apache-airflow[dask]</code> if you've installed <code>apache-airflow</code> and do not use <code>pip install airflow[dask]</code>.
+Leaving out the prefix <code>apache-</code> will install an old version of Airflow next to your current version, leading to a world of hurt.</p>
+<p>You may run into problems if you don't have the right binaries or Python packages installed for certain backends or operators.
+When specifying support for e.g. PostgreSQL when installing extra Airflow packages, make sure the database is installed; do a <code>brew install postgresql</code> or <code>apt-get install postgresql</code> before the <code>pip install apache-airflow[postgres]</code>.
+Similarly, when running into HiveOperator errors, do a <code>pip install apache-airflow[hive]</code> and make sure you can use Hive.</p>
+<h4>Run Airflow</h4>
+<p>Before you can use Airflow you have to initialize its database.
+The database contains information about historical &amp; running workflows, connections to external data sources, 
+user management, etc.
+Once the database is set up, Airflow's UI can be accessed by running a web server and workflows can be started.</p>
+<p>The default database is a SQLite database, which is fine for this tutorial.
+In a production setting you'll probably be using something like MySQL or PostgreSQL.
+You'll probably want to back it up as this database stores the state of everything related to Airflow.</p>
+<p>Airflow will use the directory set in the environment variable <code>AIRFLOW_HOME</code> to store its configuration and our SQlite database.
+This directory will be used after your first Airflow command.
+If you don't set the environment variable <code>AIRFLOW_HOME</code>, Airflow will create the directory <code>~/airflow/</code> to put its files in.</p>
+<p>Set environment variable <code>AIRFLOW_HOME</code> to e.g. your current directory <code>$(pwd)</code>:</p>
+<div class="highlight"><pre><span></span><span class="c1"># change the default location ~/airflow if you want:</span>
+$ <span class="nb">export</span> <span class="nv">AIRFLOW_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+</pre></div>
+
+
+<p>or any other suitable directory.</p>
+<p>Next, initialize the database:</p>
+<div class="highlight"><pre><span></span>$ airflow initdb
+</pre></div>
+
+
+<p>Now start the web server and go to <a href="http://localhost:8080/">localhost:8080</a> to check out the UI:</p>
+<div class="highlight"><pre><span></span>$ airflow webserver --port <span class="m">8080</span>
+</pre></div>
+
+
+<p>It should look something like this:</p>
+<p><img src="https://airflow.incubator.apache.org/_images/dags.png" style="width: 70%;"/></p>
+<p>With the web server running workflows can be started from a new terminal window.
+Open a new terminal, activate the virtual environment and set the environment variable <code>AIRFLOW_HOME</code> for this terminal as well:</p>
+<div class="highlight"><pre><span></span>$ <span class="nb">source</span> activate airflow-tutorial
+$ <span class="nb">export</span> <span class="nv">AIRFLOW_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+</pre></div>
+
+
+<p>Make sure that you're an in the same directory as before when using <code>$(pwd)</code>.</p>
+<p>Run a supplied example:</p>
+<div class="highlight"><pre><span></span>$ airflow run example_bash_operator runme_0 <span class="m">2017</span>-07-01
+</pre></div>
+
+
+<p>And check in the web UI that it has run by going to Browse -&gt; Task Instances.</p>
+<p>This concludes all the setting up that you need for this tutorial.</p>
+<h4>Tips</h4>
+<ul>
+<li>Both Python 2 and 3 are be supported by Airflow.
+However, some of the lesser used parts (e.g. operators in <code>contrib</code>) might not support Python 3. </li>
+<li>For more information on configuration check the sections on <a href="https://airflow.incubator.apache.org/configuration.html">Configuration</a> and <a href="https://airflow.incubator.apache.org/security.html">Security</a> of the Airflow documentation.</li>
+<li>Check the <a href="https://github.com/apache/incubator-airflow/tree/master/scripts">Airflow repository</a> for <code>upstart</code> and <code>systemd</code> templates.</li>
+<li>Airflow logs extensively, so pick your log folder carefully.</li>
+<li>Set the timezone of your production machine to UTC: Airflow assumes it's UTC.</li>
+</ul>
+<h2>2. Workflows</h2>
+<p>We'll create a workflow by specifying actions as a Directed Acyclic Graph (DAG) in Python.
+The tasks of a workflow make up a Graph; the graph is Directed because the tasks are ordered; and we don't want to get stuck in an eternal loop so the graph also has to be Acyclic.</p>
+<p>The figure below shows an example of a DAG:</p>
+<p><img src="https://airflow.incubator.apache.org/_images/subdag_before.png" style="width: 60%;"/></p>
+<p>The DAG of this tutorial is a bit easier.
+It will consist of the following tasks:</p>
+<ul>
+<li>print <code>'hello'</code></li>
+<li>wait 5 seconds</li>
+<li>print <code>'world</code> </li>
+</ul>
+<p>and we'll plan daily execution of this workflow.</p>
+<h4>Create a DAG file</h4>
+<p>Go to the folder that you've designated to be your <code>AIRFLOW_HOME</code> and find the DAGs folder located in subfolder <code>dags/</code> (if you cannot find, check the setting <code>dags_folder</code> in <code>$AIRFLOW_HOME/airflow.cfg</code>).
+Create a Python file with the name <code>airflow_tutorial.py</code> that will contain your DAG.
+Your workflow will automatically be picked up and scheduled to run.</p>
+<p>First we'll configure settings that are shared by all our tasks.
+Settings for tasks can be passed as arguments when creating them, but we can also pass a dictionary with default values to the DAG.
+This allows us to share default arguments for all the tasks in our DAG is the best place to set e.g. the owner and start date of our DAG.</p>
+<p>Add the following import and dictionary to <code>airflow_tutorial.py</code> to specify the owner, start time, and retry settings that are shared by our tasks:</p>
+<h4>Configure common settings</h4>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+
+<span class="n">default_args</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;owner&#39;</span><span class="p">:</span> <span class="s1">&#39;me&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;retries&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;retry_delay&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>These settings tell Airflow that this workflow is owned by <code>'me'</code>, that the workflow is valid since June 1st of 2017, it should not send emails and it is allowed to retry the workflow once if it fails with a delay of 5 minutes.
+Other common default arguments are email settings on failure and the end time.</p>
+<h4>Create the DAG</h4>
+<p>We'll now create a DAG object that will contain our tasks.</p>
+<p>Name it <code>airflow_tutorial_v01</code> and pass <code>default_args</code>:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">airflow</span> <span class="kn">import</span> <span class="n">DAG</span>
+
+<span class="k">with</span> <span class="n">DAG</span><span class="p">(</span><span class="s1">&#39;airflow_tutorial_v01&#39;</span><span class="p">,</span>
+         <span class="n">default_args</span><span class="o">=</span><span class="n">default_args</span><span class="p">,</span> 
+         <span class="n">schedule_interval</span><span class="o">=</span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
+         <span class="p">)</span> <span class="k">as</span> <span class="n">dag</span><span class="p">:</span>
+</pre></div>
+
+
+<p>With <code>schedule_interval='0 * * * *'</code> we've specified a run at every hour 0; the DAG will run each day at 00:00.
+See <a href="https://crontab.guru/#0_*_*_*_*">crontab.guru</a> for help deciphering cron schedule expressions.
+Alternatively, you can use strings like <code>'@daily'</code> and <code>'@hourly'</code>.</p>
+<p>We've used a <a href="https://jeffknupp.com/blog/2016/03/07/python-with-context-managers/">context manager</a> to create a DAG (new since 1.8).
+All the tasks for the DAG should be indented to indicate that they are part of this DAG.
+Without this context manager you'd have to set the <code>dag</code> parameter for each of your tasks.</p>
+<p>Airflow will generate DAG runs from the <code>start_date</code> with the specified <code>schedule_interval</code>.
+Once a DAG is active, Airflow continuously checks in the database if all the DAG runs have successfully ran since the <code>start_date</code>.
+Any missing DAG runs are automatically scheduled.
+When you initialize on 2016-01-04 a DAG with a <code>start_date</code> at 2016-01-01 and a daily <code>schedule_interval</code>, Airflow will schedule DAG runs for all the days between 2016-01-01 and 2016-01-04.</p>
+<p>A run starts <em>after</em> the time for the run has passed.
+The time for which the workflow runs is called the <code>execution_date</code>.
+The daily workflow for 2016-06-02 runs after 2016-06-02 23:59 and the hourly workflow for 2016-07-03 01:00 starts after 2016-07-03 01:59.</p>
+<p>From the ETL viewpoint this makes sense: you can only process the daily data for a day after it has passed.
+This can, however, ask for some juggling with date for other workflows.
+For Machine Learning models you may want to use all the data up to a given date, you'll have to add the <code>schedule_interval</code> to your <code>execution_date</code> somewhere in the workflow logic.</p>
+<p>Because Airflow saves all the (scheduled) DAG runs in its database, you should not change the <code>start_date</code> and <code>schedule_interval</code> of a DAG.
+Instead, up the version number of the DAG (e.g. <code>airflow_tutorial_v02</code>) and avoid running unnecessary tasks by using the web interface or command line tools</p>
+<p>Timezones and especially daylight savings can mean trouble when scheduling things, so keep your Airflow machine in UTC.
+You don't want to skip an hour because daylight savings kicks in (or out).</p>
+<h4>Create the tasks</h4>
+<p>Tasks are represented by operators that either perform an action, transfer data, or sense if something has been done.
+Examples of actions are running a bash script or calling a Python function; of transfers are copying tables between databases or uploading a file; and of sensors are checking if a file exists or data has been added to a database.</p>
+<p>We'll create a workflow consisting of three tasks: we'll print 'hello', wait for 10 seconds and finally print 'world'. 
+The first two are done with the <code>BashOperator</code> and the latter with the <code>PythonOperator</code>.
+Give each operator an unique task ID and something to do:</p>
+<div class="highlight"><pre><span></span>    <span class="kn">from</span> <span class="nn">airflow.operators.bash_operator</span> <span class="kn">import</span> <span class="n">BashOperator</span>
+    <span class="kn">from</span> <span class="nn">airflow.operators.python_operator</span> <span class="kn">import</span> <span class="n">PythonOperator</span>
+
+    <span class="k">def</span> <span class="nf">print_world</span><span class="p">():</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;world&#39;</span><span class="p">)</span>
+
+    <span class="n">print_hello</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;print_hello&#39;</span><span class="p">,</span> 
+                               <span class="n">bash_command</span><span class="o">=</span><span class="s1">&#39;echo &quot;hello&quot;&#39;</span><span class="p">)</span>
+    <span class="n">sleep</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;sleep&#39;</span><span class="p">,</span>
+                         <span class="n">bash_command</span><span class="o">=</span><span class="s1">&#39;sleep 5&#39;</span><span class="p">)</span>
+    <span class="n">print_world</span> <span class="o">=</span> <span class="n">PythonOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;print_world&#39;</span><span class="p">,</span>
+                                 <span class="n">python_callable</span><span class="o">=</span><span class="n">print_world</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Note how we can pass bash commands in the <code>BashOperator</code> and that the <code>PythonOperator</code> asks for a Python function that can be called.</p>
+<p>Dependencies in tasks are added by setting other actions as upstream (or downstream). 
+Link the operations in a chain so that <code>sleep</code> will be run after <code>print_hello</code> and is followed by <code>print_world</code>; <code>print_hello</code> -&gt; <code>sleep</code> -&gt; <code>print_world</code>:</p>
+<div class="highlight"><pre><span></span><span class="n">print_hello</span> <span class="o">&gt;&gt;</span> <span class="n">sleep</span> <span class="o">&gt;&gt;</span> <span class="n">print_world</span>
+</pre></div>
+
+
+<p>After rearranging the code your final DAG should look something like:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">datetime</span> <span class="kn">as</span> <span class="nn">dt</span>
+
+<span class="kn">from</span> <span class="nn">airflow</span> <span class="kn">import</span> <span class="n">DAG</span>
+<span class="kn">from</span> <span class="nn">airflow.operators.bash_operator</span> <span class="kn">import</span> <span class="n">BashOperator</span>
+<span class="kn">from</span> <span class="nn">airflow.operators.python_operator</span> <span class="kn">import</span> <span class="n">PythonOperator</span>
+
+
+<span class="k">def</span> <span class="nf">print_world</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;world&#39;</span><span class="p">)</span>
+
+
+<span class="n">default_args</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;owner&#39;</span><span class="p">:</span> <span class="s1">&#39;me&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;retries&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;retry_delay&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+<span class="p">}</span>
+
+
+<span class="k">with</span> <span class="n">DAG</span><span class="p">(</span><span class="s1">&#39;airflow_tutorial_v01&#39;</span><span class="p">,</span>
+         <span class="n">default_args</span><span class="o">=</span><span class="n">default_args</span><span class="p">,</span>
+         <span class="n">schedule_interval</span><span class="o">=</span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
+         <span class="p">)</span> <span class="k">as</span> <span class="n">dag</span><span class="p">:</span>
+
+    <span class="n">print_hello</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;print_hello&#39;</span><span class="p">,</span>
+                               <span class="n">bash_command</span><span class="o">=</span><span class="s1">&#39;echo &quot;hello&quot;&#39;</span><span class="p">)</span>
+    <span class="n">sleep</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;sleep&#39;</span><span class="p">,</span>
+                         <span class="n">bash_command</span><span class="o">=</span><span class="s1">&#39;sleep 5&#39;</span><span class="p">)</span>
+    <span class="n">print_world</span> <span class="o">=</span> <span class="n">PythonOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s1">&#39;print_world&#39;</span><span class="p">,</span>
+                                 <span class="n">python_callable</span><span class="o">=</span><span class="n">print_world</span><span class="p">)</span>
+
+
+<span class="n">print_hello</span> <span class="o">&gt;&gt;</span> <span class="n">sleep</span> <span class="o">&gt;&gt;</span> <span class="n">print_world</span>
+</pre></div>
+
+
+<h4>Test the DAG</h4>
+<p>First check that DAG file contains valid Python code by executing the file with Python:</p>
+<div class="highlight"><pre><span></span>$ python airflow_tutorial.py
+</pre></div>
+
+
+<p>You can manually test a single task for a given <code>execution_date</code> with <code>airflow test</code>:</p>
+<div class="highlight"><pre><span></span>$ airflow <span class="nb">test</span> airflow_tutorial_v01 print_world <span class="m">2016</span>-07-01
+</pre></div>
+
+
+<p>This runs the task locally as if it was for 2017-07-01, ignoring other tasks and without communicating to the database.</p>
+<h4>Activate the DAG</h4>
+<p>Now that you're confident that your dag works, turn on the DAG in the web UI and sit back while Airflow starts backfilling the dag runs!</p>
+<h4>Tips</h4>
+<ul>
+<li>Make your DAGs idempotent: rerunning them should give the game results.</li>
+<li>Use the the cron notation for <code>schedule_interval</code> instead of <code>@daily</code> and <code>@hourly</code>. 
+<code>@daily</code> and <code>@hourly</code> always run after respectively midnight and the full hour, regardless of the hour/minute specified.</li>
+<li>Manage your connections and secrets with the <a href="https://airflow.incubator.apache.org/configuration.html#connections">Connections</a> and/or <a href="https://airflow.incubator.apache.org/ui.html#variable-view">Variables</a>.</li>
+</ul>
+<h2>3. Exercises</h2>
+<p>You now know the basics of setting up Airflow, creating a DAG and turning it on; time to go deeper!</p>
+<ul>
+<li>Change the interval to every 30 minutes.</li>
+<li>Use a sensor to add a delay of 5 minutes before starting. </li>
+<li>Implement templating for the <code>BashOperator</code>: print the <code>execution_date</code> instead of <code>'hello'</code> (check out the <a href="https://airflow.incubator.apache.org/tutorial.html#templating-with-jinja">original tutorial</a> and the <a href="https://github.com/apache/incubator-airflow/blob/master/airflow/example_dags/example_bash_operator.py">example DAG</a>).</li>
+<li>Use templating for the <code>PythonOperator</code>: print the <code>execution_date</code> with one hour added in the function <code>print_world()</code> (check out the documentation of the <a href="https://airflow.incubator.apache.org/code.html#airflow.operators.PythonOperator"><code>PythonOperator</code></a>).</li>
+</ul>
+<h2>4. Resources</h2>
+<ul>
+<li><a href="https://pythonhosted.org/airflow/tutorial.html">The official Airflow tutorial</a>: showing a bit more in-depth templating magic.</li>
+<li><a href="https://gtoonstra.github.io/etl-with-airflow/">ETL best practices with Airflow</a>: good best practices to follow when using Airflow.</li>
+<li><a href="https://medium.com/handy-tech/airflow-tips-tricks-and-pitfalls-9ba53fba14eb">Airflow: Tips, Tricks, and Pitfalls</a>: more explanations to help you grok Airflow.</li>
+</ul>
+<p><meta property="og:image" content="images/smalllogo.png" /></p>	
+
+	</article>
+
+    <p>
+	<a href="https://twitter.com/share" class="twitter-share-button" data-via="" data-lang="en" data-size="large" data-related="">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+	</p>
+
+
+		  </div>	
+		  
+
+	  </div>
+
+      <footer>
+		<p role="contentinfo">
+		  © 2013 Henk - Proudly powered by <a href="http://alexis.notmyidea.org/pelican/">pelican</a>. Theme <a href="https://github.com/fle/pelican-simplegrey">pelican-simplegrey</a>.
+    	</p>
+
+	  </footer>	
+
+	</div>
+	
+
+</body>
+</html>
