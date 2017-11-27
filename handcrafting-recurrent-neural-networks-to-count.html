@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="">	
+<head>
+	<meta charset="utf-8"/>
+	<title>Handcrafting Recurrent Neural Networks to count - ~/hgrif</title>	
+	<meta name="author" content="Henk">
+	
+
+	<meta name="description" content="Recurrent neural networks (RNNs) handle complex problems like convert speech to text like a pro. This blog shows the basics of RNNs by teaching a RNN to count.">
+
+
+	<link rel="top" href="#" /><link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,300italic,400italic,600italic|Source+Code+Pro' rel='stylesheet' type='text/css'></link>
+	<link rel="stylesheet" href="/theme/css/main.css" type="text/css" />
+		
+
+</head>
+	
+<body>
+
+    <div class="container">
+	  
+	  <header role="banner">
+	    <div class="feeds">
+	    </div>
+		<a href="" class="title">~/hgrif</a>
+      </header>
+	
+	  <div class="wrapper">
+
+		  <div role="main" class="content">
+	<article class="full">
+			
+		<h1>Handcrafting Recurrent Neural Networks to count</h1>
+		
+<div class="metadata">
+  <time datetime="2017-11-27T12:00:00+01:00" pubdate>Mon 27 November 2017</time>
+    <address class="vcard author">
+      by <a class="url fn" href="/author/henk.html">Henk</a>
+    </address>
+  in <a href="/category/blogs.html">Blogs</a>
+</div>		
+		<p>Recurrent neural networks (RNNs) handle complex problems like convert speech to text like a pro.
+This blog shows the basics of RNNs by teaching a RNN to count.</p>
+<p>RNNs are well suited for problems with sequences like captioning images and converting speech to text.
+The former generates an sequence of words from an image, the latter translate a stream of audio into words. </p>
+<p>State of the art RNNs can choose to remember or forget a part of a sequence, and can learn to which part to attend to.
+Some fantastic blogs on this topic are <a href="https://karpathy.github.io/2015/05/21/rnn-effectiveness/">The Unreasonable Effectiveness of Recurrent Neural Networks
+</a>, <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">Understanding LSTM Networks</a> and <a href="http://distill.pub/2016/augmented-rnns/">Attention and Augmented Recurrent Neural Networks</a>.</p>
+<p>I wrote this blog while trying to reproduce some of the results of <a href="http://blog.echen.me/2017/05/30/exploring-lstms/">Exploring LSTMs</a>.
+Let's first go back to the basics!</p>
+<h2>1. The basics</h2>
+<p>Consider the situation where we start of with <span class="math">\(\mathbf{x}\)</span>, some image data, and <span class="math">\(\mathbf{y}\)</span>, labels indicating if the image does or does not contain a dog.
+Our neural network should do some magical operations to find all the dogs in the images.</p>
+<h3>Feedforward nets</h3>
+<p>The most basic neural network is a feedforward network, shown in the figure below.
+On the left, a network with one layer with two hidden units.
+On the right, a compact notation of the left image representing a network with an arbitrary number of hidden units.</p>
+<p style="text-align:center;">
+    <img src="images/feedforward-architecture.png" alt="Drawing" style="width: 30%;"/>
+</p>
+
+<p>This network adds constant values to the input <span class="math">\(\mathbf{x}\)</span>, weights the result and passes this through some function <span class="math">\(f\)</span>.
+This gives use the activations <span class="math">\(\mathbf{h}\)</span> in the hidden layer:</p>
+<div class="math">$$\mathbf{h}=f \left(\mathbf{W}^T \mathbf{x}  + \mathbf{b} \right)$$</div>
+<p>To get our predictions <span class="math">\(\hat{\mathbf{y}}\)</span> we'll do the same with <span class="math">\(\mathbf{h}\)</span>:</p>
+<div class="math">$$\hat{\mathbf{y}}=g \left(\mathbf{w}^T \mathbf{h} + \mathbf{c} \right)$$</div>
+<p>Learning is the process of optimizing the parameters <span class="math">\(\mathbf{W}\)</span>, <span class="math">\(\mathbf{b}\)</span>, <span class="math">\(\mathbf{w}\)</span> and <span class="math">\(\mathbf{c}\)</span> so that we get correct predictions.</p>
+<p>Before learning, the network starts with some random values for its parameters.
+The data <span class="math">\(\mathbf{X}\)</span> is fed forward through our functions, resulting in predictions. 
+The predictions are compared to the ground truth and the error is backpropagated through the network so we can find better values for our values.
+Doing this many times will (hopefully) teach the network to recognize dogs.</p>
+<p>Deep Learning is the process of finding the architecture of the network (e.g. how many hidden layers &amp; units to use) and teaching it to learn.
+This process often involves waiting, throwing a lot of money on GPU's and burning out PhD students.
+Deep Learning is not for the faint of heart.</p>
+<p>The network in the figure above does not really deal well with sequences.
+Let's say you get one of these ambiguous images:</p>
+<p style="text-align:center;">
+    <img src="images/chihuahua-muffin.png" alt="Drawing" style="width: 30%;"/>
+</p>
+
+<p>If you just saw a picture of a tiny dog house, you're probably more likely to think that the
+weird object in the picture is a chihuahua and not a muffin.
+This makes sense: context matters.</p>
+<p>Our network learns its parameters once and has a fixed state, so it cannot take context into account.
+It's opinion doesn't change depending on what it just saw.
+We'll have to find a network architecture that can remember.</p>
+<h3>Recurrent neural nets</h3>
+<p>A recurrent neural network updates an internal state based on what it has seen so far.
+A diagram is shown below.</p>
+<p style="text-align:center;">
+    <img src="images/rnn-architecture.png" alt="Drawing" style="width: 60%;"/>
+</p>
+
+<p><span class="math">\(\mathbf{x}\)</span> is now a sequence of data for multiple time steps <span class="math">\(t\)</span>.
+A sequence can consist, for exampe, of images, words or phrases uttered.
+At any given time <span class="math">\(t\)</span>, we construct an idea <span class="math">\(\mathbf{h}^{(t)}\)</span> from <span class="math">\(\mathbf{x}^{(t)}\)</span>, our new input, and <span class="math">\(\mathbf{h}^{(t-1)}\)</span>, our ideas so far.
+For the formula-minded audience:</p>
+<div class="math">$$ \mathbf{h}^{(t)} =f \left(\mathbf{h}^{(t-1)}, \mathbf{x}^{(t)}; \boldsymbol{\theta} \right) $$</div>
+<p>(All the parameters for this layer are put in <span class="math">\(\boldsymbol{\theta}\)</span>.)</p>
+<p>This specific architecture waits for the whole sequence to end, but there are also forms that generate output for each time step.
+Similarly in real life, we can wait for someone to finish her sentence before translating it or try to translate someone on the fly.
+We'll learn a neural network to count with the former approach.</p>
+<h2>2. The counting problem</h2>
+<p>This counting problem will show that a RNN is able to keep a state.
+Our RNN will see a sequence of <code>a</code>'s and has to output the same number of <code>b</code>'s.
+Counting for this tasks means keeping track of how many <code>a</code>'s it has seen and the <code>b</code>'s outputted so far.</p>
+<p>The data looks like this:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;axb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaxbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaxbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaxbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaxbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaxbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaxbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaxbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaxbbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaaxbbbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaaaxbbbbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaaaaxbbbbbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaaaaaxbbbbbbbbbbbbb&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;aaaaaaaaaaaaaaxbbbbbbbbbbbbbb&#39;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>Here we have:</p>
+<ul>
+<li><code>aaa</code>: the sequence to count;</li>
+<li><code>x</code>: a switch character telling that the sequence has ended and prediction should start;</li>
+<li><code>bbb</code>: the sequence to output.</li>
+</ul>
+<p>We'll add another special character: <code>s</code>.
+<code>s</code> signals that the sequence has ended and is also used for padding so that all our sequences are of the same length.</p>
+<h2>3. Preprocessing</h2>
+<p>We'll generate all possible combinations of sentences and the next character to be predicted by moving through the text.
+The network is asked to predict <code>b</code>'s after <code>x</code>, for example:</p>
+<div class="highlight"><pre><span></span><span class="n">Text</span><span class="o">:</span> <span class="n">aaxbb</span>
+<span class="n">Sentences</span><span class="o">:</span> <span class="o">[</span><span class="s1">&#39;aax&#39;</span><span class="o">,</span> <span class="s1">&#39;aaxb&#39;</span><span class="o">,</span> <span class="s1">&#39;aaxbb&#39;</span><span class="o">]</span>
+<span class="n">Next</span> <span class="n">char</span><span class="o">:</span> <span class="o">[</span><span class="s1">&#39;b&#39;</span><span class="o">,</span> <span class="s1">&#39;b&#39;</span><span class="o">,</span> <span class="s1">&#39;s&#39;</span><span class="o">]</span>
+</pre></div>
+
+
+<p>We'll have to vectorize the text into numerical features so that <code>keras</code> can use it.</p>
+<div class="highlight"><pre><span></span><span class="n">Element</span> <span class="n">of</span> <span class="n">X</span><span class="p">:</span>
+        <span class="n">a</span>      <span class="n">b</span>      <span class="n">x</span>      <span class="n">s</span>
+<span class="mi">0</span>    <span class="bp">True</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">1</span>    <span class="bp">True</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">2</span>   <span class="bp">False</span>  <span class="bp">False</span>   <span class="bp">True</span>  <span class="bp">False</span>
+<span class="mi">3</span>   <span class="bp">False</span>   <span class="bp">True</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">4</span>   <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="o">...</span>
+<span class="mi">26</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">27</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">28</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">29</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="mi">30</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>  <span class="bp">False</span>
+<span class="n">Element</span> <span class="n">of</span> <span class="n">y</span><span class="p">:</span>
+<span class="bp">True</span>
+</pre></div>
+
+
+<p>In this example, the columns correspond with <code>a</code>, <code>b</code>, <code>x</code> or <code>s</code> and the rows are the characters of the sequence (note that we're missing padding in this example).
+Our <code>X</code> consists of matrices stacked like this.
+An element of <code>y</code> is a single boolean value indicating if a <code>b</code> should be predicted.</p>
+<h2>4. The network</h2>
+<p>What kind of architecture should our model have?</p>
+<p>We'll feed in <code>X</code> and want to predict for a single class (<code>b</code> or not <code>b</code>).
+The last layer should thus be a single node dense layer with sigmoid activation, but how is the network going to count?</p>
+<p>As this is a fairly simple task, a plain old RNN should be good enough:</p>
+<p style="text-align:center;">
+<img src="images/counting-architecture.png" alt="Drawing" style="width: 60%;"/>
+</p>
+
+<p>Our RNN should keep track of the number <code>a</code>'s seen and <code>b</code>'s outputted so far and decide whether to output another <code>b</code>.</p>
+<h3>Handcrafting</h3>
+<p>We can let the model learn, but we can also handcraft the neural network ourself!
+Our RNN should increment a counter for every <code>a</code> it has seen and increase a different counter for every <code>b</code> it has predicted.
+A <code>b</code> should only be predicted if the count for observed <code>a</code>'s is higher than for predicted <code>b</code>'s.</p>
+<p>The RNN should thus consist of two units with a linear activation function.
+The update equations for our neural network are:</p>
+<div class="math">$$\mathbf{h}^{(t)}_{RNN}=\mathbf{b}_{RNN} + \mathbf{W}_{RNN} \mathbf{h}^{(t-1)}_{RNN} + \mathbf{U}_{RNN} \mathbf{x}^{(t)}$$</div>
+<div class="math">$$\mathbf{y}=\mathsf{sigmoid} \left( \mathbf{b}_{dense} + \mathbf{W}_{dense} \mathbf{h}^{(T)}_{RNN} \right)$$</div>
+<p>We can create this network in <code>keras</code> with:</p>
+<div class="highlight"><pre><span></span><span class="n">n_remember_units</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">sequence_input</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">SimpleRNN</span><span class="p">(</span><span class="n">n_remember_units</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> 
+                     <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rnn&#39;</span><span class="p">)(</span><span class="n">sequence_input</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dense&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">counting_model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">sequence_input</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Each unit focusses on one character: <span class="math">\(\mathbf{U}_{RNN}\)</span> is only non-zero if an <code>a</code> or <code>b</code> is seen for its unit.
+The units should only look at its own previous states, so <span class="math">\(\mathbf{W}_{RNN}\)</span> is a diagonal matrix with ones.
+Choosing a value of one for these matrices will add the input (if it's <code>b</code> or not) to the number of <code>b</code>'s seen.  </p>
+<p>The dense layer substracts the input of the <code>b</code> unit from the <code>a</code> unit, and converts it to a probability.
+We'll weigh the counts coming from the RNNs with +0.5 for <code>a</code> and -0.5 for <code>b</code>.</p>
+<p>The probability will be higher than 0.5 if <code>n_a</code> &gt; <code>n_b</code>.
+All biases are zero.
+(Question for the reader: why do we need <span class="math">\(&gt; 0.5\)</span> and not <span class="math">\(\geq 0.5\)</span>?).</p>
+<div class="highlight"><pre><span></span><span class="n">weights</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+             <span class="p">]),</span>  <span class="c1"># U_RNN</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> 
+              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]),</span>  <span class="c1"># W_RNN</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>  <span class="c1"># b_RNN</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">]]),</span>  <span class="c1"># W_dense</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># b_dense</span>
+<span class="p">]</span>
+
+<span class="n">counting_model</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>  <span class="c1"># No .compile() and .fit() needed!</span>
+</pre></div>
+
+
+<p>Will this really work?</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">classification_report</span>
+
+
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">counting_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+             <span class="n">precision</span>    <span class="n">recall</span>  <span class="n">f1</span><span class="o">-</span><span class="n">score</span>   <span class="n">support</span>
+
+      <span class="bp">False</span>       <span class="mf">1.00</span>      <span class="mf">1.00</span>      <span class="mf">1.00</span>       <span class="mi">196</span>
+       <span class="bp">True</span>       <span class="mf">1.00</span>      <span class="mf">1.00</span>      <span class="mf">1.00</span>       <span class="mi">105</span>
+
+<span class="n">avg</span> <span class="o">/</span> <span class="n">total</span>       <span class="mf">1.00</span>      <span class="mf">1.00</span>      <span class="mf">1.00</span>       <span class="mi">301</span>
+</pre></div>
+
+
+<p>Yes, it works!</p>
+<p>Let's investigate what's happening inside the RNN.
+To see what the the RNN is doing, we can discard the last classification layer and look into the RNN layer.
+Create a new model without the dense layer and tell the RNN layer to return the full sequences instead of only the last hidden state:</p>
+<div class="highlight"><pre><span></span><span class="n">sequence_input</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">layers</span><span class="o">.</span><span class="n">SimpleRNN</span><span class="p">(</span><span class="n">n_remember_units</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                     <span class="n">weights</span><span class="o">=</span><span class="n">counting_model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())(</span><span class="n">sequence_input</span><span class="p">)</span>
+<span class="n">hidden_model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">sequence_input</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Calling <code>hidden_model.predict(X)</code> will give use the full sequence. 
+Let's look at what the hidden states are for a full sequence:</p>
+<p style="text-align:center;">
+<img src="images/hidden_state_rnn.png" alt="Drawing" style="width: 60%;"/>
+</p>
+
+<p>The hidden state of cell 0 slowly increases as it sees more <code>a</code>'s.
+If no <code>a</code>'s are present, the weighted average of the hidden state and the input (0) slowly decreases its value.
+The same happens for cell 1 that's looking at <code>b</code>'s.
+The output of cell 1 is substracted from the output of cell 0 and comparing it to 0.5 indicates if another <code>b</code> should be outputted.
+This allows our RNN to perfectly solve this problem!</p>
+<h2>4. Conclusion</h2>
+<p>We solved the problem, but did our RNN learn how to count?
+Not really: our RNN perfectly solves the problem but does not understand the concept of counting.
+The RNN can hold states and can compare them but it did not solve the underlying problem.
+Nevertheless, this blog (hopefully) demonstrated that RNNs can hold state and this can be used for far more complex problems!</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script>	
+
+	</article>
+
+
+		  </div>	
+		  
+
+	  </div>
+
+      <footer>
+		<p role="contentinfo">
+		  © 2017 Henk - Proudly powered by <a href="http://alexis.notmyidea.org/pelican/">pelican</a>. Theme based on <a href="https://github.com/fle/pelican-simplegrey">pelican-simplegrey</a>.
+    	</p>
+
+	  </footer>	
+
+	</div>
+	
+
+</body>
+</html>
