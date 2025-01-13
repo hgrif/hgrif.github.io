@@ -355,10 +355,9 @@ Important
   <pubDate>Tue, 25 Feb 2025 23:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Whitepaper: MLOps Beyond the Hype</title>
+  <title>Whitepaper - MLOps Beyond the Hype</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>mlops</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Sun, 31 Mar 2024 22:00:00 GMT</pubDate>
 </item>
@@ -366,7 +365,6 @@ Important
   <title>How to Measure Your MLOps Performance</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>mlops</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Sun, 19 Nov 2023 23:00:00 GMT</pubDate>
 </item>
@@ -374,9 +372,6 @@ Important
   <title>dbt tutorial: analytics engineering made easy</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>dbt</category>
-  <category>analytics engineering</category>
-  <category>bigquery</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Tue, 11 Feb 2020 23:00:00 GMT</pubDate>
 </item>
@@ -384,10 +379,6 @@ Important
   <title>Rhyme with AI</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>data science</category>
-  <category>nlp</category>
-  <category>llm</category>
-  <category>bert</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Fri, 07 Feb 2020 23:00:00 GMT</pubDate>
 </item>
@@ -395,8 +386,6 @@ Important
   <title>Fairness in AI</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>data science</category>
-  <category>fairness</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Mon, 22 Jul 2019 22:00:00 GMT</pubDate>
 </item>
@@ -961,7 +950,7 @@ $ export AIRFLOW_HOME="$(pwd)"</code></pre>
 </section>
 <section id="configure-common-settings" class="level4">
 <h4 class="anchored" data-anchor-id="configure-common-settings">Configure common settings</h4>
-<div id="8be95206" class="cell">
+<div id="eae6b635" class="cell">
 <div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><span class="im" style="color: #00769E;
 background-color: null;
 font-style: inherit;">import</span> datetime <span class="im" style="color: #00769E;
@@ -1005,7 +994,7 @@ font-style: inherit;">5</span>),</span>
 <h4 class="anchored" data-anchor-id="create-the-dag">Create the DAG</h4>
 <p>We’ll now create a DAG object that will contain our tasks.</p>
 <p>Name it <code>airflow_tutorial_v01</code> and pass <code>default_args</code>:</p>
-<div id="3219bcda" class="cell">
+<div id="80f4bb30" class="cell">
 <div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><span class="im" style="color: #00769E;
 background-color: null;
 font-style: inherit;">from</span> airflow <span class="im" style="color: #00769E;
@@ -1042,7 +1031,7 @@ font-style: inherit;">as</span> dag:</span></code></pre></div>
 <h4 class="anchored" data-anchor-id="create-the-tasks">Create the tasks</h4>
 <p>Tasks are represented by operators that either perform an action, transfer data, or sense if something has been done. Examples of actions are running a bash script or calling a Python function; of transfers are copying tables between databases or uploading a file; and of sensors are checking if a file exists or data has been added to a database.</p>
 <p>We’ll create a workflow consisting of three tasks: we’ll print ‘hello’, wait for 10 seconds and finally print ‘world’. The first two are done with the <code>BashOperator</code> and the latter with the <code>PythonOperator</code>. Give each operator an unique task ID and something to do:</p>
-<div id="c1e0aabb" class="cell">
+<div id="061b5f88" class="cell">
 <div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1">    <span class="im" style="color: #00769E;
 background-color: null;
 font-style: inherit;">from</span> airflow.operators.bash_operator <span class="im" style="color: #00769E;
@@ -1101,7 +1090,7 @@ font-style: inherit;">=</span>print_world)</span></code></pre></div>
 </div>
 <p>Note how we can pass bash commands in the <code>BashOperator</code> and that the <code>PythonOperator</code> asks for a Python function that can be called.</p>
 <p>Dependencies in tasks are added by setting other actions as upstream (or downstream). Link the operations in a chain so that <code>sleep</code> will be run after <code>print_hello</code> and is followed by <code>print_world</code>; <code>print_hello</code> -&gt; <code>sleep</code> -&gt; <code>print_world</code>:</p>
-<div id="b6c9a9e4" class="cell">
+<div id="5a0f88df" class="cell">
 <div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1">print_hello <span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">&gt;&gt;</span> sleep <span class="op" style="color: #5E5E5E;
@@ -1109,7 +1098,7 @@ background-color: null;
 font-style: inherit;">&gt;&gt;</span> print_world</span></code></pre></div>
 </div>
 <p>After rearranging the code your final DAG should look something like:</p>
-<div id="e7eecd3d" class="cell">
+<div id="8f81ac93" class="cell">
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><span class="im" style="color: #00769E;
 background-color: null;
 font-style: inherit;">import</span> datetime <span class="im" style="color: #00769E;
@@ -1287,8 +1276,6 @@ font-style: inherit;">&gt;&gt;</span> print_world</span></code></pre></div>
   <title>Apache Airflow Tutorial for Data Pipelines</title>
   <link>https://hgrif.github.io/</link>
   <description></description>
-  <category>data engineering</category>
-  <category>airflow</category>
   <guid>https://hgrif.github.io/</guid>
   <pubDate>Thu, 10 Aug 2017 22:00:00 GMT</pubDate>
 </item>
