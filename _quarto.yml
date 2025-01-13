@@ -18,5 +18,9 @@ format:
     css: styles.css
     toc: true
 
+# Needed to deploy via GitHub Actions
+# https://quarto.org/docs/publishing/github-pages.html#freezing-computations
+execute:
+  freeze: auto
 
 
