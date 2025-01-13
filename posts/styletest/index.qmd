@@ -1,0 +1,204 @@
+---
+title: "Style Test"
+date: 2025-02-26
+execute:
+  enabled: false
+---
+
+
+# Style Test for Custom SCSS
+
+---
+
+## Headings
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+
+---
+
+## Text Styles
+- **Bold Text**
+- *Italic Text*
+- ~~Strikethrough~~
+- `Inline Code`
+- [Example Link](https://example.com)
+- Superscript: E=mc<sup>2</sup>
+- Subscript: H<sub>2</sub>O
+
+---
+
+## Paragraphs
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet, nulla et dictum interdum, nisi lorem egestas odio, vitae scelerisque enim ligula venenatis dolor.
+
+---
+
+## Lists
+
+### Unordered List
+- Item 1
+- Item 2
+  - Sub-item 2.1
+  - Sub-item 2.2
+- Item 3
+
+### Ordered List
+1. First item
+2. Second item
+   1. Sub-item 2.1
+   2. Sub-item 2.2
+3. Third item
+
+---
+
+## Code Blocks
+
+```python
+# Python Code Example
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("World")
+```
+
+```r
+# R Code Example
+x <- c(1, 2, 3, 4, 5)
+mean(x)
+```
+
+## Tables
+
+### Simple Table
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Value 1  | Value 2  | Value 3  |
+| Data 1   | Data 2   | Data 3   |
+
+### Advanced Table
+| Header      | Numeric | Boolean |
+|-------------|---------|---------|
+| Row 1       | 10      | True    |
+| Row 2       | 15      | False   |
+| Row 3       | 20      | True    |
+
+---
+
+## Images
+
+### Local Image
+![Quarto Logo](quarto-logo.png)
+
+### External Image
+![External Image](https://quarto.org/docs/images/logo.png)
+
+---
+
+## Alerts and Callouts
+
+### Note
+> **Note**: This is a note callout.
+
+### Warning
+> **Warning**: This is a warning callout.
+
+### Tip
+> **Tip**: This is a tip callout.
+
+### Important
+> **Important**: This is an important callout.
+
+---
+
+## Buttons
+**Primary Button**
+[Click Me](#){.btn .btn-primary}
+
+**Secondary Button**
+[Click Me](#){.btn .btn-secondary}
+
+**Outline Button**
+[Click Me](#){.btn .btn-outline-primary}
+
+---
+
+## Math Equations
+
+### Inline Math
+The formula for energy is $E = mc^2$.
+
+### Display Math
+$$
+f(x) = \int_{-\infty}^\infty e^{-x^2} dx
+$$
+
+---
+
+## Blockquotes
+
+> This is a blockquote. Blockquotes are styled with a left border.
+
+---
+
+## Custom Components
+
+**Example of a Custom Box**
+```html
+<div class="custom-box">
+  This is a custom-styled box.
+</div>
+
+
+<form>
+  <label for="name">Name:</label><br>
+  <input type="text" id="name" name="name"><br>
+  <label for="email">Email:</label><br>
+  <input type="email" id="email" name="email"><br>
+  <input type="submit" value="Submit">
+</form>
+
+Here is an example of a footnote[^1].
+
+[^1]: This is the footnote content.
+
+::: {.card}
+#### Card Title
+This is a card body. Cards can contain any content.
+:::
+
+
+### Note
+::: {.callout-note}
+This is a **note** callout styled with `$info` Bootstrap variable.
+:::
+
+### Warning
+::: {.callout-warning}
+This is a **warning** callout styled with `$warning` Bootstrap variable.
+:::
+
+### Danger
+::: {.callout-important}
+This is a **danger** callout styled with `$danger` Bootstrap variable.
+:::
+
+
+**Primary Button**
+[Click Me](#){.btn .btn-primary}
+
+**Warning Button**
+[Click Me](#){.btn .btn-warning}  <!-- Uses Bootstrap $warning -->
+
+**Danger Button**
+[Click Me](#){.btn .btn-danger}  <!-- Uses Bootstrap $danger -->
+
+**Success Button**
+[Click Me](#){.btn .btn-success}  <!-- Uses Bootstrap $success -->
+
+
+<div class="custom-section">
+  Add your custom-styled elements here to test them.
+</div>

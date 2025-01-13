@@ -1,0 +1,22 @@
+project:
+  type: website
+
+website:
+  title: "Henk Griffioen"
+  navbar:
+    left:
+      - projects.qmd
+      - posts.qmd
+
+format:
+  html:
+    theme:
+    # https://quarto.org/docs/output-formats/html-themes.html#theme-options
+      light: flexoki.scss
+      dark: [flexoki.scss, flexoki-dark.scss]
+
+    css: styles.css
+    toc: true
+
+
+
