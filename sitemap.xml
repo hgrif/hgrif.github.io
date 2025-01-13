@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://hgrif.github.io/posts.html</loc>
+    <lastmod>2025-01-13T10:53:34.266Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/projects.html</loc>
+    <lastmod>2025-01-13T10:53:34.276Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/posts/styletest/index.html</loc>
+    <lastmod>2025-01-13T10:53:34.275Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/posts/airflow-tutorial/index.html</loc>
+    <lastmod>2025-01-13T10:53:34.267Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/posts/start-data-science-project-python/index.html</loc>
+    <lastmod>2025-01-13T10:53:34.275Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/posts/handcrafting-rnns-to-count/index.html</loc>
+    <lastmod>2025-01-13T10:53:34.275Z</lastmod>
+  </url>
+  <url>
+    <loc>https://hgrif.github.io/index.html</loc>
+    <lastmod>2025-01-13T10:53:34.266Z</lastmod>
+  </url>
+</urlset>
