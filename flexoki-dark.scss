@@ -7,7 +7,7 @@
 $theme: "flexoki-dark" !default;
 
 $black:                #100F0F;
-$white:               #FFFCF0;
+$white:                #FFFCF0;
 
 $gray-50:              #F2F0E5;
 $gray-100:             #E6E4D9;
@@ -205,6 +205,11 @@ $web-font-path: "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@3
 
 body {
   -webkit-font-smoothing: antialiased;
+}
+
+
+.nav-footer {
+  background-color: $black;
 }
 
 // Indicators
